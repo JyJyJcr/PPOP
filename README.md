@@ -6,7 +6,7 @@ ppop is an esoteric programming language for pipe-dream parallelism.
 
 ppop has some syntaxes (restriction), since the implementation is WIP.
 
-- the script must be a vaild UTF8 text file.
+- the script must be a vaild UTF-8 text file.
 - the number of graphemes in the script must be a multiple of 4. let the tuple be (`L1`, `L2`, `OP`, `LO`).
 - `L1`, `L2`, `LO` is restricted by `OP`:
 
@@ -15,19 +15,25 @@ ppop has some syntaxes (restriction), since the implementation is WIP.
 
 - pipes `#` & `@` must be typed as `usize` & `String`.
 
-these syntaxes must be removed in future: any vaild UTF8 text file will be executable.
+these syntaxes must be removed in future: any vaild UTF-8 text file will be executable.
 
 ## semantics
 
-***this section is WIP***
-
-the semantics of ppop is very similar to machine languages. every 4 unicode grapheme tuple is treated as an instruction. the difference is that all instruction is executed not once but . each of them is translated as define  as the tuple.
+the semantics of ppop is very similar to machine languages. every 4 unicode grapheme tuple is treated as an instruction. the difference is that all instruction is executed **concurrently**. each instruction is transpiled as an **agent** connected with others by **pipe**s, and all agent virtually run at same time.
 
 ### agent and pipe
 
-all 
+***this section is WIP***
 
-- if `OP` is a kind of `IOP`, then 
+easy going: agent is async thread, pipe is mpmc channnel. that is all.
+
+Since here is WIP, I put miscellaneous info below:
+
+- currently the backend is implenmented without async, and agent is executed in the order of the script. however, for forward compatibility, let the execution order implementation-dependent.
+
+- since the execution order is not defined, sequential execution is the responsibility of programmer.
+
+- also, infinity loop, out of memory due to fork-bomb-like script, and any other logic error is not a bug of the language. (Who worries about brainfuck interpreter stucking???)
 
 ## list of operator
 
