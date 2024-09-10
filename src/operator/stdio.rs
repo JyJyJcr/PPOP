@@ -1,5 +1,3 @@
-use crate::pipe::PipeSender;
-
 use super::IOp;
 
 #[derive(Debug)]
@@ -9,12 +7,15 @@ impl IOp for SxPrintf {
 
     type Output = String;
 
-    fn new(_: &str) -> Self {
-        Self {}
+    fn new(_: String) -> anyhow::Result<Self>
+    where
+        Self: Sized,
+    {
+        Ok(Self {})
     }
 
-    fn exec(&self, e: &Self::Input, po: &PipeSender<Self::Output>) {
+    fn exec(&self, e: &Self::Input) -> impl IntoIterator<Item = Self::Output> {
         print!("{}", e);
-        po.send(e.clone());
+        [e.clone()]
     }
 }

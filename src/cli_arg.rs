@@ -1,6 +1,6 @@
 use std::cell::RefCell;
 
-use crate::{agent::Agent, pipe::PipeSender, pipe_board::PipeBoard};
+use crate::{agent::Agent, deduct::AgentPrecursor, pipe::PipeSender};
 
 #[derive(Debug)]
 pub struct CliArgAgent {
@@ -9,19 +9,6 @@ pub struct CliArgAgent {
     pc: PipeSender<usize>,
     pv: PipeSender<String>,
     loc: RefCell<usize>,
-}
-impl CliArgAgent {
-    pub fn build(args: Vec<String>, board: &mut PipeBoard<String>) -> Self {
-        let (pc, _) = board.get(String::from("#"));
-        let (pv, _) = board.get(String::from("@"));
-        Self {
-            argc: args.len(),
-            argv: args,
-            pc,
-            pv,
-            loc: RefCell::new(0),
-        }
-    }
 }
 
 impl Agent for CliArgAgent {
@@ -37,5 +24,39 @@ impl Agent for CliArgAgent {
         } else {
             false
         }
+    }
+}
+
+#[derive(Debug)]
+pub struct CliArgAgentPrecursor {
+    args: Vec<String>,
+}
+impl CliArgAgentPrecursor {
+    pub fn new(args: Vec<String>) -> Self {
+        Self { args }
+    }
+}
+
+impl AgentPrecursor<String> for CliArgAgentPrecursor {
+    fn deduct(&self, idx: &mut crate::deduct::PipeTypeIndex<String>) -> anyhow::Result<()> {
+        idx.require::<usize, _>("#")?;
+        idx.require::<String, _>("@")?;
+        Ok(())
+    }
+
+    fn build(
+        self: Box<Self>,
+        idx: &crate::deduct::PipeIndex<String>,
+    ) -> anyhow::Result<Box<dyn Agent>> {
+        let pc = idx.require_sender("#")?;
+        let pv = idx.require_sender("@")?;
+
+        Ok(Box::new(CliArgAgent {
+            argc: self.args.len(),
+            argv: self.args,
+            pc,
+            pv,
+            loc: RefCell::new(0),
+        }))
     }
 }

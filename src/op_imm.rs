@@ -1,22 +1,6 @@
 use crate::Element;
 use crate::Element::*;
 
-pub fn sload(imm: &str) -> Element {
-    STR(imm.to_string())
-}
-pub fn iload(imm: &str) -> Element {
-    INT(imm.parse().unwrap())
-}
-pub fn uload(imm: &str) -> Element {
-    UINT(imm.parse().unwrap())
-}
-pub fn fload(imm: &str) -> Element {
-    FLOAT(imm.parse().unwrap())
-}
-pub fn bload(imm: &str) -> Element {
-    BOOL(imm.parse().unwrap())
-}
-
 pub fn filter(e1: &Element, e2: &Element) -> Option<Element> {
     if let BOOL(f) = e2 {
         if *f {

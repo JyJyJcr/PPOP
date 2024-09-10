@@ -1,39 +1,61 @@
 use crate::{
     agent::Agent,
-    operator::{add::SSAdd, replace::LsReplace, stdio::SxPrintf, IOp, YOp},
-    pipe_board::PipeBoard,
+    deduct::{AgentPrecursor, PipeTypeIndex},
 };
+use std::hash::Hash;
 
-pub struct Builder {
-    board: PipeBoard<String>,
-    agents: Vec<Box<dyn Agent>>,
+#[derive(Debug)]
+pub struct Builder<K> {
+    idx: PipeTypeIndex<K>,
+    precursors: Vec<Box<dyn AgentPrecursor<K>>>,
 }
-impl Builder {
+impl<K> Builder<K> {
     pub fn new() -> Self {
         Self {
-            board: PipeBoard::new(),
-            agents: Vec::new(),
+            idx: PipeTypeIndex::new(),
+            precursors: Vec::new(),
         }
     }
 
-    pub fn compile(&mut self, li1: &str, li2: &str, op: &str, lo: &str) {
-        self.agents.push(match op {
-            "+" => Box::new(SSAdd::build(li1, li2, lo, &mut self.board)),
-            "S" => Box::new(LsReplace::build(li1, li2, lo, &mut self.board)),
-            "P" => Box::new(SxPrintf::build(li1, li2, lo, &mut self.board)),
-            _ => return,
-        });
-    }
-    pub fn register<A: Agent + 'static, F: FnOnce(&mut PipeBoard<String>) -> A>(&mut self, f: F) {
-        self.agents.push(Box::new(f(&mut self.board)))
+    pub fn put(&mut self, precursor: Box<dyn AgentPrecursor<K>>) {
+        self.precursors.push(precursor);
     }
 
-    pub fn build(self) -> Executor {
-        Executor {
-            agents: self.agents,
+    pub fn deduct_once(&mut self) -> anyhow::Result<bool> {
+        let count_pre = self.idx.concrete_count();
+        for precursor in self.precursors.iter_mut() {
+            let precursor = precursor.as_mut();
+            precursor.deduct(&mut self.idx)?;
         }
+        let count_post = self.idx.concrete_count();
+        Ok(count_post > count_pre)
+    }
+
+    pub fn deduct(&mut self) -> anyhow::Result<()> {
+        while self.deduct_once()? {}
+        Ok(())
+    }
+
+    pub fn build(self) -> anyhow::Result<Executor>
+    where
+        K: Eq + Hash,
+    {
+        let idx = self.idx.generate();
+
+        let agents: anyhow::Result<Vec<Box<dyn Agent>>> = self
+            .precursors
+            .into_iter()
+            .map(|p| {
+                let a = p.build(&idx);
+                a
+            })
+            .collect();
+        let agents = agents?;
+
+        Ok(Executor { agents })
     }
 }
+
 #[derive(Debug)]
 pub struct Executor {
     agents: Vec<Box<dyn Agent>>,
